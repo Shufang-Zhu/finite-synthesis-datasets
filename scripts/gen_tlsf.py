@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
-
+import os
+import subprocess
 from pathlib import Path
 from typing import Dict, List, Optional
 
@@ -18,8 +19,17 @@ def transform(dataset, save):
     for file in sorted(dataset_path.glob("./*.ltlf")):
         tlsf_file = tlsf_path / f"{file.stem}.tlsf"
         tlsf = transform_tlsf(dataset, file)
-        print(tlsf)
+
         Path(tlsf_file).write_text(tlsf)
+
+    tlsf_dataset_path = Path("../TLSF/" + dataset)
+    for file in sorted(tlsf_dataset_path.glob("./*.tlsf")):
+        cmd = "./../syfco-bin/syfco --format ltlxba-fin -m fully " + str(file.absolute())
+        arch = subprocess.check_output(cmd, shell=True)
+        # print(str(arch))
+        if "Syntax Error" in str(arch):
+            print(file.absolute())
+        # os.system(cmd)
 
 def transform_tlsf(dataset: str, file: Path) -> str:
     part_file = file.parent / f"{file.stem}.part"
@@ -27,6 +37,8 @@ def transform_tlsf(dataset: str, file: Path) -> str:
     formula_str = file.read_text()
     if dataset.find ("Random") or dataset.find("Patterns"):
         formula_str = formula_str.replace(" & ", " && ")
+        formula_str = formula_str.replace(")&", ") &&")
+        formula_str = formula_str.replace("&&(", "&& (")
         formula_str = formula_str.replace(" | ", " || ")
     if formula_str.find(")->("):
         formula_str = formula_str.replace(")->(", " ) -> ( ")
